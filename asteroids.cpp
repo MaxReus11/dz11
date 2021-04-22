@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <ctime>
 #include <list>
+#include<chrono>
+#include<thread>
 using namespace sf;
 
 const int W = 1200;
@@ -133,12 +135,15 @@ public:
 
 class player : public Entity
 {
+
 public:
+    int health_points;
     bool thrust;
 
     player()
     {
         name = "player";
+        health_points = 3;
     }
 
     void update()
@@ -170,7 +175,30 @@ public:
     }
 
 };
+class Health_Points {
+public:
+    Animation anim;
+    float x, y, angle;
+    Health_Points(Animation& a, int X, int Y, float Angle = 0)
+    {
+        anim = a;
+        x = X; y = Y;
+        angle = Angle;
+       // R = radius;
+    }
+    void draw(RenderWindow& app)
+    {
+        anim.sprite.setPosition(x, y);
+        anim.sprite.setRotation(angle + 90);
+        app.draw(anim.sprite);
 
+       /* CircleShape circle(R);
+        circle.setFillColor(Color(255, 0, 0, 170));
+        circle.setPosition(x, y);
+        circle.setOrigin(R, R);
+        app.draw(circle);*/
+    }
+};
 
 bool isCollide(Entity* a, Entity* b)
 {
@@ -182,12 +210,13 @@ bool isCollide(Entity* a, Entity* b)
 
 int main()
 {
+    int death_flag = false;
     srand(time(0));
 
     RenderWindow app(VideoMode(W, H), "Asteroids!");
     app.setFramerateLimit(60);
 
-    Texture t1, t2, t3, t4, t5, t6, t7;
+    Texture t1, t2, t3, t4, t5, t6, t7, t8, t9;
     t1.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/spaceship.png");
     t2.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/background.jpg");
     t3.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/explosions/type_C.png");
@@ -195,12 +224,13 @@ int main()
     t5.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/fire_blue.png");
     t6.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/rock_small.png");
     t7.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/explosions/type_B.png");
-
+    t8.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/health_points.png");
+    t9.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/game_over.png");
     t1.setSmooth(true);
     t2.setSmooth(true);
-
     Sprite background(t2);
-
+    Sprite game_over(t9);
+    Sprite health(t8);
     Animation sExplosion(t3, 0, 0, 256, 256, 48, 0.5);
     Animation sRock(t4, 0, 0, 64, 64, 16, 0.2);
     Animation sRock_small(t6, 0, 0, 64, 64, 16, 0.2);
@@ -208,7 +238,7 @@ int main()
     Animation sPlayer(t1, 40, 0, 40, 40, 1, 0);
     Animation sPlayer_go(t1, 40, 40, 40, 40, 1, 0);
     Animation sExplosion_ship(t7, 0, 0, 192, 192, 64, 0.5);
-
+    Animation health_points(t8, 0, 0, 225, 225, 1, 0);
 
     std::list<Entity*> entities;
 
@@ -276,17 +306,25 @@ int main()
                     if (isCollide(a, b))
                     {
                         b->life = false;
-
                         Entity* e = new Entity();
                         e->settings(sExplosion_ship, a->x, a->y);
                         e->name = "explosion";
                         entities.push_back(e);
-
-                        p->settings(sPlayer, W / 2, H / 2, 0, 20);
-                        p->dx = 0; p->dy = 0;
+                        if (p->health_points > 1)
+                        {
+                            p->settings(sPlayer, W / 2, H / 2, 0, 20);
+                            p->dx = 0; p->dy = 0;
+                            p->health_points--;
+                            
+                        }
+                        else 
+                        {
+                            e->draw(app);
+                            app.display();
+                            death_flag = true;
+                        }
                     }
             }
-
 
         if (p->thrust)  p->anim = sPlayer_go;
         else   p->anim = sPlayer;
@@ -313,12 +351,32 @@ int main()
             if (e->life == false) { i = entities.erase(i); delete e; }
             else i++;
         }
-
+        if (death_flag) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            //app.clear();
+            app.draw(background);
+            app.display();
+            for (int i = 0; i < 255; i = i + 5) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                game_over.setColor(Color(255, 255, 255, i));
+                app.draw(game_over);
+                app.display();
+            }
+            system("pause");
+            return 0;
+        }
         //////draw//////
         app.draw(background);
         for (auto i : entities) i->draw(app);
-        app.display();
-    }
+        
+        for (auto i = 0; i < p->health_points; i++) {
+            Health_Points* hp = new Health_Points(health_points, 1050+i*75, 120, -90);
+            hp->draw(app);
 
+        }
+        app.display();
+        
+    }
+   
     return 0;
 }
