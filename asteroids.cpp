@@ -139,11 +139,12 @@ class player : public Entity
 public:
     int health_points;
     bool thrust;
-
+    int points;
     player()
     {
         name = "player";
         health_points = 3;
+        points = 0;
     }
 
     void update()
@@ -191,14 +192,32 @@ public:
         anim.sprite.setPosition(x, y);
         anim.sprite.setRotation(angle + 90);
         app.draw(anim.sprite);
-
-       /* CircleShape circle(R);
-        circle.setFillColor(Color(255, 0, 0, 170));
-        circle.setPosition(x, y);
-        circle.setOrigin(R, R);
-        app.draw(circle);*/
     }
 };
+//class Game_Points {
+//public:
+//    Text points_;
+//    float x, y, angle;
+//   Game_Points( int X, int Y, float Angle = 0)
+//   {
+//       Font font;
+//       font.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/Chunk Five Print.otf");
+//        x = X; y = Y;
+//        angle = Angle;
+//        points_.setFont(font);
+//        points_.setFillColor(Color(255, 21, 25, 40));
+//        points_.setOutlineColor(Color::Black);
+//        points_.setOutlineThickness(2);
+//        points_.setCharacterSize(48);
+//        points_.setStyle(sf::Text::Regular);
+//        points_.setString(std::to_string(0));
+//    }
+//    void draw(RenderWindow& app)
+//    {
+//        points_.setPosition(x, y);
+//        app.draw(points_);
+//    }
+//};
 
 bool isCollide(Entity* a, Entity* b)
 {
@@ -213,9 +232,20 @@ int main()
     int death_flag = false;
     srand(time(0));
 
+    Text points_;
+    Font font;
+    font.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/Chunk Five Print.otf");
+    points_.setFont(font);
+    points_.setFillColor(Color(255, 0, 0, 200));
+    points_.setOutlineColor(Color::Black);
+    points_.setOutlineThickness(2);
+    points_.setCharacterSize(48);
+    points_.setStyle(sf::Text::Regular);
+    points_.setString(std::to_string(0));
+    points_.setPosition(20, 0);
+
     RenderWindow app(VideoMode(W, H), "Asteroids!");
     app.setFramerateLimit(60);
-
     Texture t1, t2, t3, t4, t5, t6, t7, t8, t9;
     t1.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/spaceship.png");
     t2.loadFromFile("C:/workspace/cpp/asteroids/asteroids/images/background.jpg");
@@ -230,7 +260,6 @@ int main()
     t2.setSmooth(true);
     Sprite background(t2);
     Sprite game_over(t9);
-    Sprite health(t8);
     Animation sExplosion(t3, 0, 0, 256, 256, 48, 0.5);
     Animation sRock(t4, 0, 0, 64, 64, 16, 0.2);
     Animation sRock_small(t6, 0, 0, 64, 64, 16, 0.2);
@@ -285,7 +314,8 @@ int main()
                     {
                         a->life = false;
                         b->life = false;
-
+                        p->points++;
+                        points_.setString(std::to_string(p->points));
                         Entity* e = new Entity();
                         e->settings(sExplosion, a->x, a->y);
                         e->name = "explosion";
@@ -319,13 +349,32 @@ int main()
                         }
                         else 
                         {
-                            e->draw(app);
+                            p->health_points--;
+                            for (int i = 0; i < 64; i++) {
+                                app.draw(background);
+                                e->anim.update();
+                                e->draw(app);
+                                app.display();
+                            }
+                            app.draw(background);
                             app.display();
                             death_flag = true;
                         }
                     }
             }
-
+        if (death_flag) {
+            
+            app.clear();
+            app.draw(background);
+            for (int i = 0; i < 255; i = i + 7) {
+               
+                game_over.setColor(Color(255, 255, 255, i));
+                app.draw(game_over);
+                app.display();
+            }
+            system("pause");
+            return 0;
+        }
         if (p->thrust)  p->anim = sPlayer_go;
         else   p->anim = sPlayer;
 
@@ -351,20 +400,7 @@ int main()
             if (e->life == false) { i = entities.erase(i); delete e; }
             else i++;
         }
-        if (death_flag) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            //app.clear();
-            app.draw(background);
-            app.display();
-            for (int i = 0; i < 255; i = i + 5) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                game_over.setColor(Color(255, 255, 255, i));
-                app.draw(game_over);
-                app.display();
-            }
-            system("pause");
-            return 0;
-        }
+       
         //////draw//////
         app.draw(background);
         for (auto i : entities) i->draw(app);
@@ -374,6 +410,8 @@ int main()
             hp->draw(app);
 
         }
+        //game_points.draw(app);
+        app.draw(points_);
         app.display();
         
     }
